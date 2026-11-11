@@ -1,22 +1,23 @@
 import { useActionState } from 'react'
-import { signup, type SignupRequest } from '../api/auth'
-import { ApiError, fieldErrorsFrom422 } from '../api/client'
+import { fieldErrorsFrom422 } from '../api/client'
+import { useSignup } from '../api/generated'
+import type { CreateUserRequest } from '../api/generated/model'
 import { PasswordField } from '../components/PasswordField'
 import { SubmitButton } from '../components/SubmitButton'
 import { TextField } from '../components/TextField'
 import styles from './SignupPage.module.css'
 
-type Field = keyof SignupRequest
+type Field = keyof CreateUserRequest
 type FieldErrors = Partial<Record<Field, string>>
 
 type State =
-  | { status: 'idle' | 'error'; values: SignupRequest; fieldErrors: FieldErrors; formError?: string }
+  | { status: 'idle' | 'error'; values: CreateUserRequest; fieldErrors: FieldErrors; formError?: string }
   | { status: 'success'; email: string }
 
-const EMPTY: SignupRequest = { first_name: '', last_name: '', email: '', password: '' }
+const EMPTY: CreateUserRequest = { first_name: '', last_name: '', email: '', password: '' }
 const MIN_PASSWORD = 8
 
-function validate({ first_name, last_name, email, password }: SignupRequest): FieldErrors {
+function validate({ first_name, last_name, email, password }: CreateUserRequest): FieldErrors {
   const errors: FieldErrors = {}
   if (!first_name) errors.first_name = 'Enter your first name.'
   if (!last_name) errors.last_name = 'Enter your last name.'
@@ -26,38 +27,41 @@ function validate({ first_name, last_name, email, password }: SignupRequest): Fi
   return errors
 }
 
-async function signupAction(_prev: State, formData: FormData): Promise<State> {
-  const values: SignupRequest = {
+function readValues(formData: FormData): CreateUserRequest {
+  return {
     first_name: String(formData.get('first_name') ?? '').trim(),
     last_name: String(formData.get('last_name') ?? '').trim(),
     email: String(formData.get('email') ?? '').trim(),
     password: String(formData.get('password') ?? ''),
   }
-
-  const fieldErrors = validate(values)
-  if (Object.keys(fieldErrors).length) return { status: 'error', values, fieldErrors }
-
-  try {
-    await signup(values)
-    return { status: 'success', email: values.email }
-  } catch (err) {
-    if (err instanceof ApiError) {
-      if (err.status === 409)
-        return { status: 'error', values, fieldErrors: { email: 'An account with this email already exists.' } }
-      if (err.status === 422) return { status: 'error', values, fieldErrors: fieldErrorsFrom422(err.body) }
-      if (err.status === 0)
-        return { status: 'error', values, fieldErrors: {}, formError: "Couldn't reach the server. Check your connection and try again." }
-    }
-    return { status: 'error', values, fieldErrors: {}, formError: 'Something went wrong. Please try again.' }
-  }
 }
 
 export function SignupPage() {
-  const [state, formAction] = useActionState(signupAction, {
-    status: 'idle',
-    values: EMPTY,
-    fieldErrors: {},
-  })
+  const { mutateAsync: signup } = useSignup()
+
+  const [state, formAction] = useActionState(
+    async (_prev: State, formData: FormData): Promise<State> => {
+      const values = readValues(formData)
+      const fieldErrors = validate(values)
+      if (Object.keys(fieldErrors).length) return { status: 'error', values, fieldErrors }
+
+      try {
+        // The generated fetch client resolves (doesn't throw) on non-2xx, so branch on status.
+        const res = await signup({ data: values })
+        // 409 isn't declared in the OpenAPI spec, so it's outside the generated status union.
+        if ((res.status as number) === 409)
+          return { status: 'error', values, fieldErrors: { email: 'An account with this email already exists.' } }
+        if (res.status === 201) return { status: 'success', email: res.data.email }
+        if (res.status === 422) return { status: 'error', values, fieldErrors: fieldErrorsFrom422(res.data) }
+      } catch (err) {
+        // fetch rejects with a TypeError when the server is unreachable
+        if (err instanceof TypeError)
+          return { status: 'error', values, fieldErrors: {}, formError: "Couldn't reach the server. Check your connection and try again." }
+      }
+      return { status: 'error', values, fieldErrors: {}, formError: 'Something went wrong. Please try again.' }
+    },
+    { status: 'idle', values: EMPTY, fieldErrors: {} },
+  )
 
   return (
     <main className={styles.page}>

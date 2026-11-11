@@ -10,7 +10,9 @@ from starlette.responses import JSONResponse
 
 from api.deps import DB
 
-app = FastAPI()
+app = FastAPI(
+    generate_unique_id_function=lambda route: route.name,
+)
 router = APIRouter(prefix="/api/v1")
 
 

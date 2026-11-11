@@ -1,10 +1,14 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './styles/base.css'
-import { SignupPage } from './pages/SignupPage'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import "./styles/base.css";
+import { SignupPage } from "./pages/SignupPage";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-createRoot(document.getElementById('root')!).render(
+const queryClient = new QueryClient();
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <SignupPage />
+    <QueryClientProvider client={queryClient}>
+      <SignupPage />
+    </QueryClientProvider>
   </StrictMode>,
-)
+);

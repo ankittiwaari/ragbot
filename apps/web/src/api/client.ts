@@ -1,37 +1,4 @@
-/**
- * Minimal fetch wrapper for the FastAPI backend.
- * Requests go to /api/*, which Vite proxies to localhost:8000 in dev.
- * Replace with a client generated from FastAPI's OpenAPI schema once routes exist.
- */
-
-export class ApiError extends Error {
-  readonly status: number
-  readonly body: unknown
-
-  constructor(status: number, body: unknown, message = `Request failed (${status})`) {
-    super(message)
-    this.name = 'ApiError'
-    this.status = status
-    this.body = body
-  }
-}
-
-export async function apiPost<TResponse>(path: string, payload: unknown): Promise<TResponse> {
-  let res: Response
-  try {
-    res = await fetch(`/api${path}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-  } catch {
-    throw new ApiError(0, null, 'Network error')
-  }
-
-  const body: unknown = await res.json().catch(() => null)
-  if (!res.ok) throw new ApiError(res.status, body)
-  return body as TResponse
-}
+/** Helpers for the orval-generated client in ./generated (run `npm run generate:api`). */
 
 /** FastAPI 422 body: { detail: [{ loc: ['body', 'email'], msg: '...' }] } */
 export function fieldErrorsFrom422(body: unknown): Record<string, string> {
