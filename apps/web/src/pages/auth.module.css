@@ -81,6 +81,25 @@
   margin-top: var(--space-1);
 }
 
+.footer {
+  margin-top: var(--space-6);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.footer a,
+.success a {
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+}
+
+.success a {
+  display: inline-block;
+  margin-top: var(--space-5);
+  font-size: var(--text-sm);
+}
+
 @media (max-width: 480px) {
   .card {
     padding: var(--space-6);

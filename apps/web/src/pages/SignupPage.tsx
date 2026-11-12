@@ -1,11 +1,12 @@
 import { useActionState } from 'react'
+import { Link } from 'react-router'
 import { fieldErrorsFrom422 } from '../api/client'
 import { useSignup } from '../api/generated'
 import type { CreateUserRequest } from '../api/generated/model'
 import { PasswordField } from '../components/PasswordField'
 import { SubmitButton } from '../components/SubmitButton'
 import { TextField } from '../components/TextField'
-import styles from './SignupPage.module.css'
+import styles from './auth.module.css'
 
 type Field = keyof CreateUserRequest
 type FieldErrors = Partial<Record<Field, string>>
@@ -77,6 +78,7 @@ export function SignupPage() {
             <p className={styles.subtitle}>
               Your account for <strong>{state.email}</strong> has been created.
             </p>
+            <Link to="/login">Continue to log in</Link>
           </div>
         ) : (
           <>
@@ -135,6 +137,10 @@ export function SignupPage() {
               />
               <SubmitButton className={styles.submit}>Create account</SubmitButton>
             </form>
+
+            <p className={styles.footer}>
+              Already have an account? <Link to="/login">Log in</Link>
+            </p>
           </>
         )}
       </div>

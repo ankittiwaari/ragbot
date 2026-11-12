@@ -7,6 +7,8 @@
 
 export * from './createUserRequest';
 export * from './hTTPValidationError';
+export * from './loginCredentials';
+export * from './loginDetails';
 export * from './userOut';
 export * from './validationError';
 export * from './validationErrorCtx';
