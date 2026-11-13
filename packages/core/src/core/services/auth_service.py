@@ -24,6 +24,10 @@ class InvalidCredentialsError(Exception):
     pass
 
 
+class TokenExpired(Exception):
+    """When JWT token expires"""
+
+
 async def signup(
     db: AsyncSession, email: str, password: str, first_name: str, last_name: str
 ) -> User:
@@ -91,5 +95,7 @@ async def decode_access_token(token: str) -> UUID:
             options={"require": ["sub", "exp"]},
         )
         return UUID(decoded["sub"])
+    except jwt.ExpiredSignatureError as e:
+        raise TokenExpired("Token expired!") from e
     except (jwt.PyJWTError, ValueError) as e:
         raise jwt.InvalidTokenError("Invalid token") from e
