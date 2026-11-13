@@ -10,9 +10,11 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=(ROOT_DIR / ".env",), extra="ignore")
     database_url: str
     db_echo: bool = False
-    jwt_secret: SecretStr  # from pydantic; keeps it out of logs
+    jwt_secret: SecretStr
     jwt_algorithm: str = "HS256"
     access_token_ttl_minutes: int = 30
+    rabbitmq_url: SecretStr
+    worker_prefetch: int = 4
 
 
 settings = Settings()  # type: ignore

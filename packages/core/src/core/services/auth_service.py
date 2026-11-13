@@ -83,7 +83,6 @@ async def create_access_token(user_id):
 
 
 async def decode_access_token(token: str) -> UUID:
-    print(token)
     try:
         decoded = jwt.decode(
             token,

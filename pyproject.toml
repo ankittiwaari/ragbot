@@ -8,6 +8,7 @@ dependencies = []
 members = [
     "packages/core",
     "apps/api",
+    "apps/worker",
 ]
 
 [tool.fastapi]

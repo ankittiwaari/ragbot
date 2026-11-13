@@ -4,8 +4,9 @@ from typing import Annotated
 from core.db.models.user import User
 from core.db.session import SessionLocal
 from core.exceptions.auth_exceptions import InvalidTokenError
+from core.messaging.publisher import Publisher
 from core.services.auth_service import get_user_from_token
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -38,3 +39,10 @@ async def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def get_publisher(request: Request) -> Publisher:
+    return request.app.state.publisher
+
+
+PublisherDep = Annotated[Publisher, Depends(get_publisher)]

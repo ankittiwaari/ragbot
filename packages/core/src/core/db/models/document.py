@@ -2,9 +2,10 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from core.db.base import Base
 from sqlalchemy import DateTime, ForeignKey, Text, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from core.db.base import Base
 
 if TYPE_CHECKING:
     from core.db.models.chunk import Chunk
