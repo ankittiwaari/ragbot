@@ -1,5 +1,6 @@
 from core.db.models.document import Document
 from core.db.session import SessionLocal
+from core.ingestion.chunker import embed_file
 from core.messaging.message import IngestDocument
 
 
@@ -23,7 +24,7 @@ async def handle_ingest(body: bytes) -> None:
 
         path = doc.source
         try:
-            print(path)
+            await embed_file(path)
         except PermanentError as e:
             doc.status, doc.error = "failed", str(e)
             await db.commit()

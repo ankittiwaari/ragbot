@@ -5,10 +5,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './bodyUploadFile';
 export * from './createUserRequest';
 export * from './hTTPValidationError';
 export * from './loginCredentials';
 export * from './loginDetails';
+export * from './uploadFileResponse';
 export * from './userOut';
 export * from './validationError';
 export * from './validationErrorCtx';

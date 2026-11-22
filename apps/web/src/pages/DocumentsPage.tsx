@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type DragEvent } from 'react'
 import {
   ACCEPTED_EXTENSIONS,
   ApiError,
+  documentFromUpload,
   documentsQueryKey,
   listDocuments,
   MAX_UPLOAD_BYTES,
@@ -72,8 +73,9 @@ export function DocumentsPage() {
         signal: controller.signal,
         onProgress: (progress) => patch(item.key, { progress }),
       })
-        .then((doc) => {
+        .then((res) => {
           remove(item.key)
+          const doc = documentFromUpload(res)
           // Show it in the list straight away, then reconcile with the server.
           queryClient.setQueryData<DocumentOut[]>(documentsQueryKey, (old) => [
             doc,

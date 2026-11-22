@@ -5,19 +5,29 @@
  * OpenAPI spec version: 0.1.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
+
+import type {
+  BodyUploadFile,
+  HTTPValidationError,
+  UploadFileResponse
+} from '../model';
 
 
 
@@ -157,3 +167,102 @@ export function useHealth<TData = Awaited<ReturnType<typeof health>>, TError = u
 
 
 
+export type uploadFileResponse200 = {
+  data: UploadFileResponse
+  status: 200
+}
+
+export type uploadFileResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type uploadFileResponseSuccess = (uploadFileResponse200) & {
+  headers: Headers;
+};
+export type uploadFileResponseError = (uploadFileResponse422) & {
+  headers: Headers;
+};
+
+export type uploadFileResponse = (uploadFileResponseSuccess | uploadFileResponseError)
+
+export const getUploadFileUrl = () => {
+
+
+
+
+  return `/api/v1/files/`
+}
+
+/**
+ * @summary Upload File
+ */
+export const uploadFile = async (bodyUploadFile: BodyUploadFile, options?: RequestInit): Promise<uploadFileResponse> => {
+    const formData = new FormData();
+formData.append(`file`, bodyUploadFile.file);
+
+  const res = await fetch(getUploadFileUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: formData
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: uploadFileResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as uploadFileResponse
+}
+
+
+
+
+
+export const getUploadFileMutationKey = () => ['uploadFile'] as const;
+
+export const getUploadFileMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadFile>>, TError,UploadFileMutationVariables, TContext>, fetch?: RequestInit}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadFile>>, TError,UploadFileMutationVariables, TContext> => {
+
+const mutationKey = getUploadFileMutationKey();
+const {mutation: mutationOptions, fetch: fetchOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, fetch: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadFile>>, UploadFileMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  uploadFile(data,fetchOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadFileMutationResult = NonNullable<Awaited<ReturnType<typeof uploadFile>>>
+    export type UploadFileMutationBody = BodyUploadFile
+    export type UploadFileMutationError = HTTPValidationError
+    export type UploadFileMutationVariables = {data: BodyUploadFile}
+
+    /** @summary Upload File */
+export const useUploadFile = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadFile>>, TError,UploadFileMutationVariables, TContext>, fetch?: RequestInit}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof uploadFile>>,
+        TError,
+        UploadFileMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUploadFileMutationOptions(options), queryClient);
+    }

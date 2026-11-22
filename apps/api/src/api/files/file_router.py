@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, status
 from api.deps import DB, CurrentUser, PublisherDep
 from api.files.file_requests import UploadFileResponse
 
-router = APIRouter(prefix="/files")
+router = APIRouter(prefix="/api/v1/files")
 
 UPLOAD_DIR = ROOT_DIR / "uploads"
 MAX_BYTES = 20 * 1024 * 1024  # 20 MB

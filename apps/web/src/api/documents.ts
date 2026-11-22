@@ -1,15 +1,21 @@
 /**
- * Documents API — hand-written because the backend doesn't expose these endpoints yet.
- * Once it does, regenerate with orval and replace this file with the generated client.
+ * Documents API.
  *
- * Contract this page expects (all calls send `Authorization: Bearer <token>`):
- *   GET  /api/v1/documents   → 200 DocumentOut[]               (newest first)
- *   POST /api/v1/documents   multipart/form-data, field `file`
- *                            → 201 DocumentOut                 (status starts as "queued")
- *                            → 413 { detail } too large · 415 { detail } unsupported type
- *   Any                      → 401 when the token is missing, invalid or expired
+ * Upload uses the generated endpoint (`uploadFile` in ./generated) for its URL and types, but sends the request
+ * itself with XMLHttpRequest: the generated fetch client can't report upload progress or take a per-file
+ * abort signal, and it doesn't send the auth header.
+ *   POST /api/v1/files/   multipart/form-data, field `file`
+ *                         → 200 UploadFileResponse              (the document starts as "queued")
+ *                         → 413 { detail } too large · 415 { detail } unsupported type · 422 missing file
+ *
+ * Listing is still hand-written because the backend doesn't expose it yet; regenerate with orval once it does.
+ *   GET  /api/v1/documents → 200 DocumentOut[]                  (newest first)
+ *
+ * All calls send `Authorization: Bearer <token>`; any of them → 401 when it's missing, invalid or expired.
  */
 import { authHeader, customFetch, handleUnauthorized, parseBody } from './fetcher'
+import { getUploadFileUrl } from './generated'
+import type { UploadFileResponse } from './generated/model'
 
 export type DocumentStatus = 'queued' | 'indexing' | 'ready' | 'failed'
 
@@ -24,11 +30,11 @@ export interface DocumentOut {
 
 // Keep in sync with the backend's limits. The server is the authority; these just fail fast.
 export const ACCEPTED_EXTENSIONS = ['.pdf', '.docx', '.txt', '.md'] as const
-export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024
+export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 
 export const documentsQueryKey = ['documents'] as const
 
-const ENDPOINT = '/api/v1/documents'
+const LIST_ENDPOINT = '/api/v1/documents'
 
 export class ApiError extends Error {
   readonly status: number
@@ -60,7 +66,7 @@ function errorFor(status: number, data: unknown, action: 'load' | 'upload'): Api
 }
 
 export async function listDocuments(signal?: AbortSignal): Promise<DocumentOut[]> {
-  const res = await customFetch<{ data: unknown; status: number }>(ENDPOINT, { signal })
+  const res = await customFetch<{ data: unknown; status: number }>(LIST_ENDPOINT, { signal })
   if (res.status !== 200) throw errorFor(res.status, res.data, 'load')
   return res.data as DocumentOut[]
 }
@@ -72,13 +78,13 @@ export async function listDocuments(signal?: AbortSignal): Promise<DocumentOut[]
 export function uploadDocument(
   file: File,
   { onProgress, signal }: { onProgress?: (fraction: number) => void; signal?: AbortSignal } = {},
-): Promise<DocumentOut> {
+): Promise<UploadFileResponse> {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) return reject(new DOMException('Upload cancelled', 'AbortError'))
 
     const xhr = new XMLHttpRequest()
     const auth = authHeader()
-    xhr.open('POST', ENDPOINT)
+    xhr.open('POST', getUploadFileUrl())
     for (const [k, v] of Object.entries(auth)) xhr.setRequestHeader(k, v)
 
     xhr.upload.onprogress = (e) => {
@@ -87,7 +93,7 @@ export function uploadDocument(
     xhr.onload = () => {
       handleUnauthorized(xhr.status, 'Authorization' in auth)
       const data = parseBody(xhr.responseText)
-      if (xhr.status === 201 || xhr.status === 200) resolve(data as DocumentOut)
+      if (xhr.status === 200 || xhr.status === 201) resolve(data as UploadFileResponse)
       else reject(errorFor(xhr.status, data, 'upload'))
     }
     xhr.onerror = () => reject(new TypeError('Network error'))
@@ -98,6 +104,17 @@ export function uploadDocument(
     body.append('file', file)
     xhr.send(body)
   })
+}
+
+/** The list row for a file that was just accepted, shown until the next list fetch replaces it. */
+export function documentFromUpload(res: UploadFileResponse): DocumentOut {
+  return {
+    id: res.document_id,
+    filename: res.original_name,
+    status: 'queued',
+    error: null,
+    updated_at: new Date().toISOString(),
+  }
 }
 
 /** Client-side check before uploading; returns the problem, or undefined if the file looks fine. */

@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     access_token_ttl_minutes: int = 30
     rabbitmq_url: SecretStr
     worker_prefetch: int = 4
+    embed_tokenizer: str
+    max_token: int
+    open_router_base_url: str
+    open_router_api_key: SecretStr
+    open_router_model: str
+    embedding_model: str
 
 
 settings = Settings()  # type: ignore
